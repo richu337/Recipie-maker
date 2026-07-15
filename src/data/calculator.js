@@ -9,10 +9,26 @@ export async function fetchItems() {
 export async function fetchRecipes() {
   const { data: recipes, error: recipesError } = await supabase
     .from('recipes')
-    .select('*, recipe_ingredients(*)')
+    .select('*')
+    .order('id')
   if (recipesError) throw recipesError
 
-  return recipes
+  const { data: ingredients, error: ingError } = await supabase
+    .from('recipe_ingredients')
+    .select('*')
+    .order('id')
+  if (ingError) throw ingError
+
+  const ingredientMap = {}
+  for (const ing of ingredients) {
+    if (!ingredientMap[ing.recipe_id]) ingredientMap[ing.recipe_id] = []
+    ingredientMap[ing.recipe_id].push(ing)
+  }
+
+  return recipes.map((r) => ({
+    ...r,
+    recipe_ingredients: ingredientMap[r.id] || [],
+  }))
 }
 
 export function buildRecipeMap(recipes) {
@@ -59,7 +75,7 @@ export function getRawMaterials(
 
   for (const ing of recipe.ingredients) {
     const totalIngredientQty = (ing.quantity / recipe.outputQuantity) * targetQuantity
-    getRawMaterials(ing.ingredient_item_id, totalIngredientQty, recipeMap, itemsMap, tree)
+    getRawMaterials(ing.itemId, totalIngredientQty, recipeMap, itemsMap, tree)
   }
 
   return tree
