@@ -1,56 +1,117 @@
-export default function MaterialBreakdown({ steps, raw, items }) {
+import { useState } from 'react'
+import { getItemMeta } from '../data/itemMeta.js'
+
+function BreakdownRow({ name, quantity, ingredients, depth = 0 }) {
+  const [expanded, setExpanded] = useState(depth < 1)
+  const meta = getItemMeta(name)
+  const hasChildren = ingredients && ingredients.length > 0
+
+  return (
+    <div className="relative">
+      <div
+        className={`flex items-center gap-2 py-2 px-3 rounded-xl transition-colors hover:bg-white/[0.02] ${depth > 0 ? 'ml-6' : ''}`}
+      >
+        {depth > 0 && (
+          <div className="absolute left-[1.125rem] top-0 bottom-1/2 w-px bg-white/5" />
+        )}
+        {hasChildren ? (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="w-5 h-5 flex items-center justify-center rounded-md bg-white/5 hover:bg-white/10 transition-colors shrink-0 text-[10px] text-craft-text-muted"
+          >
+            {expanded ? '▼' : '▶'}
+          </button>
+        ) : (
+          <div className="w-5 h-5 flex items-center justify-center shrink-0">
+            <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+          </div>
+        )}
+        <span className="text-lg shrink-0">{meta.icon}</span>
+        <span className="text-sm text-craft-text">{name}</span>
+        <span className="text-sm text-craft-text-muted font-mono tabular-nums">×{Math.round(quantity * 100) / 100}</span>
+        {hasChildren && (
+          <>
+            <span className="text-xs text-craft-text-muted/50">({ingredients.length})</span>
+          </>
+        )}
+      </div>
+
+      {expanded && hasChildren && (
+        <div className="border-l border-white/5 ml-[1.625rem] pl-1">
+          {ingredients.map((ing, i) => (
+            <BreakdownRow
+              key={i}
+              name={ing.itemName}
+              quantity={ing.quantity}
+              ingredients={ing.subIngredients}
+              depth={depth + 1}
+              itemMap={itemMap}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function MaterialBreakdown({ steps, raw, items, recipes, ingredients, onItemClick }) {
   const itemMap = new Map(items.map((i) => [i.id, i]))
 
   if (steps.length === 0 && raw.length === 0) {
     return (
-      <div className="card text-center py-8">
-        <p className="text-craft-muted">Select items and set quantities to see material requirements.</p>
+      <div className="card text-center py-8 animate-fade-in">
+        <p className="text-craft-text-muted/50">Select items and set quantities to see material requirements.</p>
       </div>
     )
   }
 
+  const treeSteps = steps.map(step => ({
+    ...step,
+    ingredients: step.ingredients.map(ing => {
+      const subRecipe = recipes.find(r => r.outputItemId === ing.itemId)
+      const subIngs = subRecipe
+        ? ingredients.filter(i => i.recipeId === subRecipe.id).map(i => ({
+            itemName: itemMap.get(i.ingredientItemId)?.name || i.ingredientItemId,
+            quantity: i.quantity * (ing.quantity / (subRecipe.outputQuantity || 1)),
+            subIngredients: [],
+          }))
+        : []
+      return {
+        ...ing,
+        subIngredients: subIngs,
+      }
+    }),
+  }))
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {steps.length > 0 && (
-        <div className="card">
+        <div className="card animate-slide-up">
           <h2 className="text-lg font-semibold text-craft-text mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-craft-gold shrink-0" />
-            Crafting Breakdown
+            <span>📈</span>
+            Expandable Breakdown
           </h2>
 
-          <div className="space-y-3">
-            {steps.map((step, i) => (
-              <div key={i} className="bg-craft-bg rounded-lg p-3 border border-gray-800">
+          <div className="space-y-1">
+            {treeSteps.map((step, i) => (
+              <div key={i} className="rounded-xl bg-craft-bg/40 border border-white/5 p-3 transition-all duration-200 hover:border-white/10">
                 <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-4 h-4 text-craft-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span className="font-semibold text-craft-text">
-                    {step.itemName}
-                  </span>
-                  <span className="text-craft-muted text-sm">×{Math.round(step.quantity * 100) / 100}</span>
+                  <span className="text-xl">{getItemMeta(step.itemName).icon}</span>
+                  <span className="font-semibold text-sm text-craft-text">{step.itemName}</span>
+                  <span className="text-sm text-craft-text-muted font-mono">×{Math.round(step.quantity * 100) / 100}</span>
                 </div>
-
-                {step.ingredients.length > 0 && (
-                  <div className="ml-6 space-y-1">
-                    {step.ingredients.map((ing, j) => {
-                      const ingItem = itemMap.get(ing.itemId)
-                      const isCraftable = ingItem?.craftable
-                      return (
-                        <div key={j} className="flex items-center gap-2 text-sm">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCraftable ? 'bg-craft-purple' : 'bg-craft-blue'}`} />
-                          <span className={isCraftable ? 'text-purple-300' : 'text-blue-300'}>
-                            {ing.itemName}
-                          </span>
-                          <span className="text-craft-muted">×{Math.round(ing.quantity * 100) / 100}</span>
-                          <span className={`text-xs ${isCraftable ? 'badge-crafted' : 'badge-raw'}`}>
-                            {isCraftable ? 'crafted' : 'raw'}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+                <div className="border-l border-white/5 ml-[1.125rem] pl-1">
+                  {step.ingredients.map((ing, j) => (
+                    <BreakdownRow
+                      key={j}
+                      name={ing.itemName}
+                      quantity={ing.quantity}
+                      ingredients={ing.subIngredients}
+                      depth={0}
+                      itemMap={itemMap}
+                    />
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -58,42 +119,46 @@ export default function MaterialBreakdown({ steps, raw, items }) {
       )}
 
       {raw.length > 0 && (
-        <div className="card">
+        <div className="card animate-slide-up">
           <h2 className="text-lg font-semibold text-craft-text mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-craft-green shrink-0" />
+            <span>🪨</span>
             Raw Material Totals
           </h2>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-gray-800 text-craft-muted text-sm">
-                  <th className="pb-2 font-medium">Material</th>
-                  <th className="pb-2 font-medium text-right">Total Needed</th>
-                </tr>
-              </thead>
-              <tbody>
-                {raw.map((mat, i) => (
-                  <tr key={mat.id} className="border-b border-gray-800/50 last:border-0">
-                    <td className="py-3 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-craft-blue shrink-0" />
-                      <span className="text-craft-text">{mat.name}</span>
-                      {mat.craftable && <span className="badge-crafted">crafted</span>}
-                    </td>
-                    <td className="py-3 text-right">
-                      <span className="text-craft-gold font-mono font-bold text-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {raw
+              .sort((a, b) => b.quantity - a.quantity)
+              .map((mat, i) => {
+                const meta = getItemMeta(mat.name)
+                const rarity = getRarityStyle(meta.rarity)
+                return (
+                  <div
+                    key={mat.id}
+                    onClick={() => onItemClick && onItemClick(mat.id)}
+                    className="flex items-center gap-3 bg-craft-bg/40 border border-white/5 rounded-xl p-3 transition-all duration-200 hover:border-white/10 hover:bg-craft-bg/60 cursor-pointer animate-fade-in"
+                    style={{ animationDelay: `${i * 40}ms` }}
+                  >
+                    <div className={`item-icon text-xl shrink-0 ${rarity.bg} ${rarity.border} border rounded-lg`}>
+                      {meta.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-craft-text truncate">{mat.name}</span>
+                        {mat.craftable && <span className="badge-crafted text-[10px]">crafted</span>}
+                      </div>
+                      <div className="text-lg font-bold text-craft-gold font-mono tabular-nums mt-0.5">
                         {Math.round(mat.quantity * 100) / 100}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                    <div className={`text-xs font-medium ${rarity.color}`}>{rarity.label}</div>
+                  </div>
+                )
+              })}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between text-sm text-craft-muted">
-            <span>Total different materials</span>
-            <span className="text-craft-text font-semibold">{raw.length}</span>
+          <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-sm">
+            <span className="text-craft-text-muted">Total different materials</span>
+            <span className="text-craft-text font-semibold tabular-nums">{raw.length}</span>
           </div>
         </div>
       )}

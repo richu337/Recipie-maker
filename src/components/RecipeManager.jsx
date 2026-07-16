@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getItemMeta } from '../data/itemMeta.js'
 
 export default function RecipeManager({ items, recipes, ingredients, onAddRecipe, onDeleteRecipe, onRefresh }) {
   const [outputId, setOutputId] = useState('')
@@ -11,7 +12,6 @@ export default function RecipeManager({ items, recipes, ingredients, onAddRecipe
   const craftableItems = items.filter((i) => i.craftable)
   const allItems = items
 
-  const recipeOutputItems = recipes.map((r) => r.outputItemId)
   const recipesWithIngredients = recipes.map((r) => ({
     ...r,
     outputName: itemMap.get(r.outputItemId)?.name || r.outputItemId,
@@ -61,13 +61,16 @@ export default function RecipeManager({ items, recipes, ingredients, onAddRecipe
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 animate-fade-in">
       <div className="card">
-        <h2 className="text-lg font-semibold text-craft-text mb-4">Add New Recipe</h2>
+        <h2 className="text-lg font-semibold text-craft-text mb-4 flex items-center gap-2">
+          <span>🔧</span>
+          Add New Recipe
+        </h2>
         <form onSubmit={handleAdd} className="space-y-4">
           <div className="flex flex-wrap gap-3">
             <div className="flex-1 min-w-[200px]">
-              <label className="block text-xs text-craft-muted mb-1">Output Item</label>
+              <label className="block text-xs text-craft-text-muted/50 mb-1.5">Output Item</label>
               <select
                 value={outputId}
                 onChange={(e) => setOutputId(e.target.value)}
@@ -75,15 +78,18 @@ export default function RecipeManager({ items, recipes, ingredients, onAddRecipe
                 required
               >
                 <option value="">Select craftable item...</option>
-                {craftableItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
+                {craftableItems.map((item) => {
+                  const meta = getItemMeta(item.name)
+                  return (
+                    <option key={item.id} value={item.id}>
+                      {meta.icon} {item.name}
+                    </option>
+                  )
+                })}
               </select>
             </div>
             <div className="w-24">
-              <label className="block text-xs text-craft-muted mb-1">Quantity</label>
+              <label className="block text-xs text-craft-text-muted/50 mb-1.5">Quantity</label>
               <input
                 type="number"
                 min="1"
@@ -96,8 +102,8 @@ export default function RecipeManager({ items, recipes, ingredients, onAddRecipe
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs text-craft-muted">Ingredients</label>
-              <button type="button" onClick={addIngredientRow} className="text-xs text-craft-blue hover:text-blue-400 transition-colors">
+              <label className="text-xs text-craft-text-muted/50">Ingredients</label>
+              <button type="button" onClick={addIngredientRow} className="text-xs text-craft-accent hover:text-craft-accent-glow transition-colors">
                 + Add Ingredient
               </button>
             </div>
@@ -112,13 +118,16 @@ export default function RecipeManager({ items, recipes, ingredients, onAddRecipe
                     required
                   >
                     <option value="">Select item...</option>
-                    {allItems.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name} {item.craftable ? '(craftable)' : '(raw)'}
-                      </option>
-                    ))}
+                    {allItems.map((item) => {
+                      const meta = getItemMeta(item.name)
+                      return (
+                        <option key={item.id} value={item.id}>
+                          {meta.icon} {item.name} {item.craftable ? '(craftable)' : '(raw)'}
+                        </option>
+                      )
+                    })}
                   </select>
-                  <span className="text-craft-muted text-sm">×</span>
+                  <span className="text-craft-text-muted text-sm">×</span>
                   <input
                     type="number"
                     min="1"
@@ -130,7 +139,7 @@ export default function RecipeManager({ items, recipes, ingredients, onAddRecipe
                     <button
                       type="button"
                       onClick={() => removeIngredientRow(idx)}
-                      className="text-craft-muted hover:text-craft-accent transition-colors p-1"
+                      className="text-craft-text-muted hover:text-craft-accent transition-colors p-1"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -153,63 +162,64 @@ export default function RecipeManager({ items, recipes, ingredients, onAddRecipe
       </div>
 
       <div className="card">
-        <h2 className="text-lg font-semibold text-craft-text mb-4">
+        <h2 className="text-lg font-semibold text-craft-text mb-4 flex items-center gap-2">
+          <span>📖</span>
           All Recipes ({recipesWithIngredients.length})
         </h2>
 
         {recipesWithIngredients.length === 0 && (
-          <p className="text-craft-muted text-sm text-center py-4">No recipes yet.</p>
+          <p className="text-craft-text-muted/50 text-sm text-center py-4">No recipes yet.</p>
         )}
 
-        <div className="space-y-3">
-          {recipesWithIngredients.map((recipe) => (
-            <div
-              key={recipe.id}
-              className="bg-craft-bg rounded-lg p-3 border border-gray-800"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-craft-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span className="font-semibold text-craft-text">
-                    {recipe.outputName}
-                  </span>
-                  <span className="text-craft-muted text-sm">×{recipe.outputQuantity}</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {recipesWithIngredients.map((recipe) => {
+            const meta = getItemMeta(recipe.outputName)
+            return (
+              <div
+                key={recipe.id}
+                className="bg-craft-bg/40 border border-white/5 rounded-xl p-3 transition-all duration-200 hover:border-white/10"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{meta.icon}</span>
+                    <span className="font-semibold text-sm text-craft-text">{recipe.outputName}</span>
+                    <span className="text-sm text-craft-text-muted font-mono">×{recipe.outputQuantity}</span>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(recipe.id)}
+                    className="text-craft-text-muted hover:text-craft-accent transition-colors p-1"
+                    title="Delete recipe"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDelete(recipe.id)}
-                  className="text-craft-muted hover:text-craft-accent transition-colors"
-                  title="Delete recipe"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
 
-              {recipe.ingredients.length > 0 && (
-                <div className="ml-6 space-y-1">
-                  {recipe.ingredients.map((ing) => {
-                    const ingItem = itemMap.get(ing.ingredientItemId)
-                    const isCraftable = ingItem?.craftable
-                    return (
-                      <div key={ing.id} className="flex items-center gap-2 text-sm">
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCraftable ? 'bg-craft-purple' : 'bg-craft-blue'}`} />
-                        <span className={isCraftable ? 'text-purple-300' : 'text-blue-300'}>
-                          {ing.name}
-                        </span>
-                        <span className="text-craft-muted">×{ing.quantity}</span>
-                        <span className={`text-xs ${isCraftable ? 'badge-crafted' : 'badge-raw'}`}>
-                          {isCraftable ? 'crafted' : 'raw'}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          ))}
+                {recipe.ingredients.length > 0 && (
+                  <div className="ml-9 space-y-1">
+                    {recipe.ingredients.map((ing) => {
+                      const ingMeta = getItemMeta(ing.name)
+                      const ingItem = itemMap.get(ing.ingredientItemId)
+                      const isCraftable = ingItem?.craftable
+                      return (
+                        <div key={ing.id} className="flex items-center gap-2 text-sm">
+                          <span>{ingMeta.icon}</span>
+                          <span className={isCraftable ? 'text-craft-purple' : 'text-craft-blue'}>
+                            {ing.name}
+                          </span>
+                          <span className="text-craft-text-muted font-mono">×{ing.quantity}</span>
+                          <span className={`text-[10px] ${isCraftable ? 'badge-crafted' : 'badge-raw'}`}>
+                            {isCraftable ? 'crafted' : 'raw'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
