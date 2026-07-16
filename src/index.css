@@ -1,33 +1,44 @@
-@import "tailwindcss";
-
-@theme {
-  --color-dark-900: #0a0a0f;
-  --color-dark-800: #12121a;
-  --color-dark-700: #1a1a26;
-  --color-dark-600: #24243a;
-  --color-dark-500: #2a2a42;
-  --color-dark-400: #3a3a54;
-  --color-dark-300: #5a5a78;
-  --color-dark-200: #8a8aa0;
-  --color-dark-100: #c0c0d0;
-  --color-dark-50: #e0e0ea;
-  --color-accent: #6c5ce7;
-  --color-accent-hover: #5a4bd1;
-  --color-accent-muted: rgba(108, 92, 231, 0.15);
-  --color-success: #00b894;
-  --color-warning: #fdcb6e;
-  --color-danger: #e17055;
-}
-
-body {
-  background-color: var(--color-dark-900);
-  color: var(--color-dark-50);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
+  body {
+    @apply bg-craft-bg text-craft-text font-game m-0 antialiased;
+  }
+
+  #root {
+    @apply min-h-screen flex flex-col;
+  }
+
   * {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-dark-500) transparent;
+    scrollbar-color: #2e303a transparent;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-craft-surface border border-gray-800 rounded-xl p-4 shadow-lg;
+  }
+
+  .btn-primary {
+    @apply bg-craft-accent hover:bg-red-500 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-white/10 text-craft-text border border-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+
+  .input-field {
+    @apply bg-craft-bg border border-gray-700 rounded-lg px-3 py-2 text-craft-text placeholder-gray-500 focus:outline-none focus:border-craft-accent focus:ring-1 focus:ring-craft-accent transition-colors duration-200 w-full;
+  }
+
+  .badge-raw {
+    @apply bg-craft-blue/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .badge-crafted {
+    @apply bg-craft-purple/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded text-xs font-medium;
   }
 }

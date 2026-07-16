@@ -1,9 +1,0 @@
-runtime: static
-buildCommand: npm install && npm run build
-staticPublishPath: ./dist
-pullRequestPreviewsEnabled: true
-envVars:
-  - key: VITE_SUPABASE_URL
-    sync: false
-  - key: VITE_SUPABASE_ANON_KEY
-    sync: false

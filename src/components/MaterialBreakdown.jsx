@@ -1,58 +1,102 @@
-import { FiChevronRight, FiCircle } from 'react-icons/fi'
+export default function MaterialBreakdown({ steps, raw, items }) {
+  const itemMap = new Map(items.map((i) => [i.id, i]))
 
-export default function MaterialBreakdown({ breakdown, itemsMap, recipeMap, selected }) {
-  if (breakdown.length === 0) return null
-
-  const selectedIds = selected.map((s) => s.itemId)
+  if (steps.length === 0 && raw.length === 0) {
+    return (
+      <div className="card text-center py-8">
+        <p className="text-craft-muted">Select items and set quantities to see material requirements.</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="bg-dark-800 border border-dark-600 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-dark-600">
-        <h2 className="font-semibold">Crafting Breakdown</h2>
-      </div>
-      <div className="divide-y divide-dark-600/50 max-h-80 overflow-y-auto">
-        {breakdown.map((step, i) => {
-          const item = itemsMap.get(step.itemId)
-          if (!item) return null
-          const isTopLevel = selectedIds.includes(step.itemId)
+    <div className="space-y-6">
+      {steps.length > 0 && (
+        <div className="card">
+          <h2 className="text-lg font-semibold text-craft-text mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-craft-gold shrink-0" />
+            Crafting Breakdown
+          </h2>
 
-          if (step.type === 'raw') {
-            return (
-              <div key={i} className="px-5 py-3 flex items-center gap-3">
-                <FiCircle size={8} className="text-success shrink-0" />
-                <span className="text-success text-sm font-medium">{Math.round(step.quantity * 100) / 100}x</span>
-                <span className="text-sm">{item.name}</span>
-                <span className="text-dark-300 text-xs ml-auto">raw</span>
-              </div>
-            )
-          }
+          <div className="space-y-3">
+            {steps.map((step, i) => (
+              <div key={i} className="bg-craft-bg rounded-lg p-3 border border-gray-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-4 h-4 text-craft-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span className="font-semibold text-craft-text">
+                    {step.itemName}
+                  </span>
+                  <span className="text-craft-muted text-sm">×{Math.round(step.quantity * 100) / 100}</span>
+                </div>
 
-          return (
-            <div key={i} className={`px-5 py-3 ${isTopLevel ? 'bg-accent-muted' : ''}`}>
-              <div className="flex items-center gap-3">
-                <FiChevronRight size={14} className="text-accent shrink-0" />
-                <span className="text-accent text-sm font-medium">{Math.round(step.quantity * 100) / 100}x</span>
-                <span className="text-sm">{item.name}</span>
-                <span className="text-dark-300 text-xs ml-auto">
-                  {step.recipe.ingredients.length} ingredient{step.recipe.ingredients.length !== 1 ? 's' : ''}
-                </span>
+                {step.ingredients.length > 0 && (
+                  <div className="ml-6 space-y-1">
+                    {step.ingredients.map((ing, j) => {
+                      const ingItem = itemMap.get(ing.itemId)
+                      const isCraftable = ingItem?.craftable
+                      return (
+                        <div key={j} className="flex items-center gap-2 text-sm">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCraftable ? 'bg-craft-purple' : 'bg-craft-blue'}`} />
+                          <span className={isCraftable ? 'text-purple-300' : 'text-blue-300'}>
+                            {ing.itemName}
+                          </span>
+                          <span className="text-craft-muted">×{Math.round(ing.quantity * 100) / 100}</span>
+                          <span className={`text-xs ${isCraftable ? 'badge-crafted' : 'badge-raw'}`}>
+                            {isCraftable ? 'crafted' : 'raw'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-              <div className="ml-9 mt-1.5 space-y-1">
-                {step.recipe.ingredients.map((ing, j) => {
-                  const ingItem = itemsMap.get(ing.itemId)
-                  const qtyPerCraft = (ing.quantity / step.recipe.outputQuantity) * step.quantity
-                  return (
-                    <div key={j} className="flex items-center gap-2 text-xs text-dark-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-dark-400" />
-                      {Math.round(qtyPerCraft * 100) / 100}x {ingItem?.name || '???'}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {raw.length > 0 && (
+        <div className="card">
+          <h2 className="text-lg font-semibold text-craft-text mb-4 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-craft-green shrink-0" />
+            Raw Material Totals
+          </h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-gray-800 text-craft-muted text-sm">
+                  <th className="pb-2 font-medium">Material</th>
+                  <th className="pb-2 font-medium text-right">Total Needed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {raw.map((mat, i) => (
+                  <tr key={mat.id} className="border-b border-gray-800/50 last:border-0">
+                    <td className="py-3 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-craft-blue shrink-0" />
+                      <span className="text-craft-text">{mat.name}</span>
+                      {mat.craftable && <span className="badge-crafted">crafted</span>}
+                    </td>
+                    <td className="py-3 text-right">
+                      <span className="text-craft-gold font-mono font-bold text-lg">
+                        {Math.round(mat.quantity * 100) / 100}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-gray-800 flex justify-between text-sm text-craft-muted">
+            <span>Total different materials</span>
+            <span className="text-craft-text font-semibold">{raw.length}</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
