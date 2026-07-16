@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getItemMeta } from '../data/itemMeta.js'
+import { getItemMeta, getRarityStyle } from '../data/itemMeta.js'
 
 function BreakdownRow({ name, quantity, ingredients, depth = 0 }) {
   const [expanded, setExpanded] = useState(depth < 1)
