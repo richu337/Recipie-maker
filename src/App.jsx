@@ -29,15 +29,24 @@ export default function App() {
   const [tab, setTab] = useState('calculator')
   const [selections, setSelections] = useState([])
 
+  const configured = isConfigured()
+  const hasData = items.length > 0
+  const craftableCount = items.filter((i) => i.craftable).length
+
   useEffect(() => {
-    if (ready && isConfigured()) {
+    if (ready && configured) {
       loadData(fetchItems, fetchRecipes, fetchRecipeIngredients)
     }
-  }, [ready, fetchItems, fetchRecipes, fetchRecipeIngredients, loadData])
+  }, [ready, configured, fetchItems, fetchRecipes, fetchRecipeIngredients, loadData])
 
   const handleRefresh = useCallback(async () => {
     await loadData(fetchItems, fetchRecipes, fetchRecipeIngredients)
   }, [loadData, fetchItems, fetchRecipes, fetchRecipeIngredients])
+
+  const handleSeed = useCallback(async () => {
+    await seedInitialData()
+    await handleRefresh()
+  }, [seedInitialData, handleRefresh])
 
   const handleSelect = useCallback((item) => {
     setSelections((prev) => {
@@ -68,7 +77,6 @@ export default function App() {
   }, [])
 
   const result = calculate(selections)
-  const configured = isConfigured()
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -80,14 +88,14 @@ export default function App() {
             </svg>
           </div>
           <h1 className="text-lg font-bold text-craft-text m-0">Recipe Calculator</h1>
-          {configured && user && (
+          {configured && !loading && (
             <span className="ml-auto text-xs text-craft-muted">
-              {items.length} items
+              {items.length} items · {craftableCount} craftable
             </span>
           )}
         </div>
 
-        {configured && !loading && items.length > 0 && (
+        {configured && !loading && (
           <div className="max-w-5xl mx-auto px-4">
             <nav className="flex gap-1 -mb-px">
               {TABS.map((t) => (
@@ -114,19 +122,27 @@ export default function App() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-6 space-y-6">
         {!configured && <SetupGuide />}
 
-        {configured && !loading && items.length === 0 && (
-          <SeedBanner onSeed={seedInitialData} ready={ready} />
-        )}
-
         {configured && loading && (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin w-8 h-8 border-2 border-craft-accent border-t-transparent rounded-full" />
           </div>
         )}
 
-        {configured && !loading && items.length > 0 && tab === 'calculator' && (
+        {configured && !loading && !hasData && (
+          <SeedBanner onSeed={handleSeed} />
+        )}
+
+        {configured && !loading && hasData && tab === 'calculator' && (
           <>
-            <RecipeSearch items={items} onSelect={handleSelect} />
+            {craftableCount === 0 && (
+              <div className="card border-craft-accent/40 bg-craft-accent/5">
+                <p className="text-craft-muted text-sm">
+                  No craftable items found. Go to the <button onClick={() => setTab('items')} className="text-craft-blue underline cursor-pointer">Items</button> or <button onClick={() => setTab('recipes')} className="text-craft-blue underline cursor-pointer">Recipes</button> tab to add some, or <button onClick={handleSeed} className="text-craft-blue underline cursor-pointer">seed the database</button> with default data.
+                </p>
+              </div>
+            )}
+
+            {craftableCount > 0 && <RecipeSearch items={items} onSelect={handleSelect} />}
 
             <SelectedItems
               selections={selections}
@@ -145,14 +161,16 @@ export default function App() {
             {selections.length === 0 && (
               <div className="card text-center py-8">
                 <p className="text-craft-muted">
-                  Search and select craftable items to begin calculating materials.
+                  {craftableCount > 0
+                    ? 'Search and select craftable items above to begin calculating materials.'
+                    : 'No craftable items available. Add items and recipes first.'}
                 </p>
               </div>
             )}
           </>
         )}
 
-        {configured && !loading && items.length > 0 && tab === 'items' && (
+        {configured && !loading && hasData && tab === 'items' && (
           <ItemManager
             items={items}
             onAddItem={addItem}
@@ -162,7 +180,7 @@ export default function App() {
           />
         )}
 
-        {configured && !loading && items.length > 0 && tab === 'recipes' && (
+        {configured && !loading && hasData && tab === 'recipes' && (
           <RecipeManager
             items={items}
             recipes={recipes}
@@ -171,6 +189,14 @@ export default function App() {
             onDeleteRecipe={deleteRecipe}
             onRefresh={handleRefresh}
           />
+        )}
+
+        {configured && !loading && !hasData && tab !== 'calculator' && (
+          <div className="card text-center py-8">
+            <p className="text-craft-muted">
+              No data in the database yet. Use the Seed Database button above to populate it.
+            </p>
+          </div>
         )}
       </main>
 

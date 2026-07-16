@@ -1,16 +1,12 @@
 import { useState } from 'react'
 
-export default function SeedBanner({ onSeed, ready }) {
+export default function SeedBanner({ onSeed }) {
   const [seeding, setSeeding] = useState(false)
-  const [done, setDone] = useState(false)
-
-  if (done) return null
 
   async function handleSeed() {
     setSeeding(true)
     try {
       await onSeed()
-      setDone(true)
     } catch {
       alert('Failed to seed data. Check your Firebase config.')
     } finally {
@@ -24,14 +20,11 @@ export default function SeedBanner({ onSeed, ready }) {
         <div>
           <h2 className="text-craft-text font-semibold text-lg m-0">Welcome to Recipe & Material Calculator</h2>
           <p className="text-craft-muted text-sm mt-1">
-            Your Firebase project is connected. Click to seed the database with initial items and recipes.
+            Your Firebase project is connected but the database is empty.
+            Click to seed it with <strong>59 items</strong> and <strong>33 recipes</strong>.
           </p>
         </div>
-        <button
-          onClick={handleSeed}
-          disabled={seeding || !ready}
-          className="btn-primary whitespace-nowrap"
-        >
+        <button onClick={handleSeed} disabled={seeding} className="btn-primary whitespace-nowrap">
           {seeding ? 'Seeding...' : 'Seed Database'}
         </button>
       </div>

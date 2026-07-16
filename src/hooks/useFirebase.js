@@ -111,11 +111,20 @@ export function useFirebase() {
     return found
   }, [])
 
+  const deleteAll = useCallback(async () => {
+    if (!db) return
+    for (const name of ['recipeIngredients', 'recipes', 'items']) {
+      const snap = await getDocs(collection(db, name))
+      const batch = writeBatch(db)
+      snap.docs.forEach((d) => batch.delete(doc(db, name, d.id)))
+      if (snap.docs.length > 0) await batch.commit()
+    }
+  }, [])
+
   const seedInitialData = useCallback(async () => {
     if (!db) return
 
-    const existing = await getDocs(query(collection(db, 'items')))
-    if (!existing.empty) return
+    await deleteAll()
 
     const { items: allItems, recipes: allRecipes } = getSeedData()
 
@@ -145,7 +154,7 @@ export function useFirebase() {
       }
     }
     await recipeBatch.commit()
-  }, [])
+  }, [deleteAll])
 
   return {
     ready, user,
